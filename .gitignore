@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+env/
+venv/
+
+# IDEs & Editors
+.idea/
+.vscode/
+
+# Coverage & pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Audio outputs
+output/
+*.wav
