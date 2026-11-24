@@ -8,7 +8,7 @@ from config import AppConfig
 from logger import setup_logging
 from tts_engine import ITTSEngine, Pyttsx3Engine, TTSError
 from voice_selector import DefaultVoiceSelector, IVoiceSelector
-
+from translator import GoogleTranslatorAdapter, ITranslator, TranslationError
 
 class ExitCode(IntEnum):
     """Standardized application exit codes."""
@@ -23,6 +23,7 @@ def run_pipeline(
     config: AppConfig,
     engine: ITTSEngine | None = None,
     selector: IVoiceSelector | None = None,
+    translator: ITranslator | None = None,
 ) -> int:
     """Execute the text-to-speech processing pipeline according to the given configuration.
 
@@ -37,6 +38,7 @@ def run_pipeline(
     logger = logging.getLogger("main")
     engine = engine or Pyttsx3Engine()
     selector = selector or DefaultVoiceSelector()
+    translator = translator or GoogleTranslatorAdapter()
 
     # 1. Handle voice listing mode
     if config.list_voices:
@@ -65,13 +67,29 @@ def run_pipeline(
         voice_id=selected_voice.id if selected_voice else None,
     )
 
+    # 3.5. Translate text if enabled
+    text_to_speak = config.speech.text
+    if config.translation.enabled:
+        logger.info(
+            "Translating text (%s -> %s): \"%s\"",
+            config.translation.source_lang,
+            config.translation.target_lang,
+            config.speech.text,
+        )
+        text_to_speak = translator.translate(
+            config.speech.text,
+            config.translation.source_lang,
+            config.translation.target_lang,
+        )
+        logger.info("Translated text: \"%s\"", text_to_speak)
+
     # 4. Execute synthesis (playback and/or file export)
     target_path = config.output.file_path if config.output.save else None
 
-    logger.info("Synthesizing speech for text: \"%s\"", config.speech.text)
+    logger.info("Synthesizing speech for text: \"%s\"", text_to_speak)
 
     saved_path = engine.synthesize(
-        text=config.speech.text,
+        text=text_to_speak,
         play=config.speech.play,
         save_path=target_path,
     )
@@ -107,6 +125,9 @@ def main(args: list[str] | None = None) -> int:
         return ExitCode.INVALID_CONFIG
     except TTSError as err:
         logger.error("TTS Engine error: %s", err)
+        return ExitCode.FAILURE
+    except TranslationError as err:
+        logger.error("Translation error: %s", err)
         return ExitCode.FAILURE
     except Exception as err:
         logger.critical("Unexpected failure: %s", err, exc_info=True)

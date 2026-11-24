@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from config import AppConfig, OutputConfig, SpeechConfig, VoiceConfig
+from config import AppConfig, OutputConfig, SpeechConfig, TranslationConfig, VoiceConfig
 
 
 def parse_args(args: None | list[str] = None) -> AppConfig:
@@ -18,6 +18,7 @@ def parse_args(args: None | list[str] = None) -> AppConfig:
     default_speech = SpeechConfig()
     default_voice = default_speech.voice
     default_output = OutputConfig()
+    default_translation = TranslationConfig()
 
     parser = argparse.ArgumentParser(
         prog="tts-synthesizer",
@@ -104,11 +105,35 @@ def parse_args(args: None | list[str] = None) -> AppConfig:
     # Playback settings group
     playback_group = parser.add_argument_group("Playback Settings")
     playback_group.add_argument(
-        "--no-play",
+        "--play",
         action="store_false",
         dest="play",
         default=default_speech.play,
-        help="Disable real-time audio playback through system speakers",
+        help="Enable real-time audio playback through system speakers",
+    )
+
+    # Translation settings group
+    translation_group = parser.add_argument_group("Translation Settings")
+    translation_group.add_argument(
+        "--source-lang",
+        type=str,
+        default=default_translation.source_lang,
+        dest="source_lang",
+        help="Language code of the input text (e.g., 'uk')",
+    )
+    translation_group.add_argument(
+        "--target-lang",
+        type=str,
+        default=default_translation.target_lang,
+        dest="target_lang",
+        help="Language code to translate the text into (e.g., 'en')",
+    )
+    translation_group.add_argument(
+        "--no-translate",
+        action="store_false",
+        dest="translate",
+        default=default_translation.enabled,
+        help="Disable translation and synthesize the text as is",
     )
 
     # Utility options
@@ -149,10 +174,16 @@ def parse_args(args: None | list[str] = None) -> AppConfig:
         output_filename=parsed.output_filename,
         output_extension=parsed.output_extension,
     )
+    translation_config = TranslationConfig(
+        enabled=parsed.translate,
+        source_lang=parsed.source_lang,
+        target_lang=parsed.target_lang,
+    )
 
     return AppConfig(
         speech=speech_config,
         output=output_config,
+        translation=translation_config,
         list_voices=parsed.list_voices,
         verbose=parsed.verbose,
     )

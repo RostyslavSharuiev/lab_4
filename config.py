@@ -34,11 +34,11 @@ class SpeechConfig:
         voice: Voice selection configuration model.
     """
 
-    text: str = "Hello! This is local speech synthesis running completely offline without external servers."
+    text: str = "Нині вівторок, двадцять четверте листопада 2026 р."
     rate: int = 150
     volume: float = 1.0
-    play: bool = True
-    voice: VoiceConfig = field(default_factory=VoiceConfig)
+    play: bool = False # тихий режим - лише запис у файл
+    voice: VoiceConfig = field(default_factory=VoiceConfig) # англійська мова
 
     def __post_init__(self) -> None:
         """Validate speech configuration parameters."""
@@ -88,6 +88,24 @@ class OutputConfig:
         """Return output file path with an appended filename suffix."""
         return self.output_dir / f"{self.output_filename}{suffix}.{self.output_extension}"
 
+@dataclass(frozen=True)
+class TranslationConfig:
+    """Configuration settings for text translation.
+
+    Attributes:
+        enabled: Whether to translate text before synthesis.
+        source_lang: Language code of the input text (e.g., 'uk').
+        target_lang: Language code to translate into (e.g., 'en').
+    """
+
+    enabled: bool = True
+    source_lang: str = "uk"
+    target_lang: str = "en"
+
+    def __post_init__(self) -> None:
+        """Validate translation configuration parameters."""
+        if self.enabled and (not self.source_lang.strip() or not self.target_lang.strip()):
+            raise ValueError("Source and target languages must be provided for translation.")
 
 @dataclass(frozen=True)
 class AppConfig:
@@ -102,6 +120,7 @@ class AppConfig:
 
     speech: SpeechConfig
     output: OutputConfig
+    translation: TranslationConfig = field(default_factory=TranslationConfig)
     list_voices: bool = False
     verbose: bool = False
 

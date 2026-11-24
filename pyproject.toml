@@ -3,6 +3,7 @@ name = "lab-4"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "deep-translator>=1.11.4",
     "pyttsx3>=2.99",
 ]
 
